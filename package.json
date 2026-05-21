@@ -1,0 +1,62 @@
+{
+  "name": "latitude-ai-profiler",
+  "version": "0.2.0",
+  "description": "Safe AI infrastructure profiler for Latitude-style bare metal recommendations.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AtypicalYounique/latitude-ai-profiler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AtypicalYounique/latitude-ai-profiler/issues"
+  },
+  "homepage": "https://github.com/AtypicalYounique/latitude-ai-profiler#readme",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "latitude-ai-profiler": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "scan": "node dist/cli.js scan --yes",
+    "benchmark": "node dist/cli.js benchmark --yes",
+    "check": "tsc --noEmit",
+    "prepack": "npm run build",
+    "pack:dry-run": "npm pack --dry-run --cache ./.npm-cache",
+    "pack:local": "npm pack --cache ./.npm-cache"
+  },
+  "keywords": [
+    "ai",
+    "infrastructure",
+    "gpu",
+    "profiler",
+    "latitude",
+    "llm",
+    "cuda",
+    "bare-metal"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

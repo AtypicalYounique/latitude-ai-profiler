@@ -1,0 +1,13 @@
+node_modules/
+.npm-cache/
+dist/
+report.json
+report.md
+intent-report.json
+intent-report.md
+packaged-intent-report.json
+benchmark.json
+package-smoke-test/
+reference/
+*.tgz
+npm-debug.log*
