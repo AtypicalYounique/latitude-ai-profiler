@@ -36,4 +36,25 @@ fi
 
 "$pkg_bin" package.json --targets "$target" --output "release/$asset"
 chmod +x "release/$asset"
-"release/$asset" version
+
+host_os="$(uname -s 2>/dev/null || true)"
+host_machine="$(uname -m 2>/dev/null || true)"
+case "$host_os" in
+  Darwin) host_platform="darwin" ;;
+  Linux) host_platform="linux" ;;
+  *) host_platform="unknown" ;;
+esac
+case "$host_machine" in
+  x86_64|amd64) host_arch="x64" ;;
+  arm64|aarch64) host_arch="arm64" ;;
+  *) host_arch="unknown" ;;
+esac
+host_asset="latitude-ai-profiler-${host_platform}-${host_arch}"
+
+if [ "${SKIP_STANDALONE_SMOKE:-0}" = "1" ]; then
+  echo "Skipping standalone smoke test for $asset"
+elif [ "$asset" = "$host_asset" ]; then
+  "release/$asset" version
+else
+  echo "Skipping standalone smoke test for cross-built $asset on $host_asset"
+fi
