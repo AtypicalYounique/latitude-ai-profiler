@@ -27,7 +27,29 @@ The profiler does not collect source code, prompts, datasets, model weights, env
 
 The tool is metadata-only by design.
 
-## Install
+## No-Node Quick Run
+
+For people who do not have Node or npm installed, use the standalone runner:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profiler/main/scripts/scan.sh | sh
+```
+
+This downloads the right standalone binary for macOS or Linux, runs a safe scan, prints the short summary, and deletes the temporary binary afterward.
+
+With workload intent:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profiler/main/scripts/scan.sh | sh -s -- --workload inference --model-size 70b --concurrency high
+```
+
+Once `latitude-ai-profiler.com/scan` is pointed at the same script, the branded command is:
+
+```bash
+curl -fsSL https://latitude-ai-profiler.com/scan | sh
+```
+
+## Install With npm
 
 ```bash
 npm install -g latitude-ai-profiler
@@ -149,6 +171,8 @@ After publishing, users can run:
 ```bash
 npx latitude-ai-profiler scan --yes
 ```
+
+Standalone release binaries are built by `.github/workflows/standalone-release.yml` when a `v*` tag is pushed. The `scripts/scan.sh` bootstrapper downloads the latest release binary for the current platform.
 
 ## Recommendation Logic
 

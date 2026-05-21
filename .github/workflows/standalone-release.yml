@@ -1,0 +1,67 @@
+name: Standalone Release Binaries
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.asset }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: node18-linux-x64
+            asset: latitude-ai-profiler-linux-x64
+          - runner: ubuntu-latest
+            target: node18-linux-arm64
+            asset: latitude-ai-profiler-linux-arm64
+          - runner: macos-13
+            target: node18-macos-x64
+            asset: latitude-ai-profiler-darwin-x64
+          - runner: macos-latest
+            target: node18-macos-arm64
+            asset: latitude-ai-profiler-darwin-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build:standalone -- ${{ matrix.target }} ${{ matrix.asset }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: release/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+
+      - run: find release -type f -name 'latitude-ai-profiler-*' -exec chmod +x {} \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/**/latitude-ai-profiler-*
+          generate_release_notes: true

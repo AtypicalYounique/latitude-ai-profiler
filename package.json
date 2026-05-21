@@ -27,6 +27,7 @@
     "scan": "node dist/cli.js scan --yes",
     "benchmark": "node dist/cli.js benchmark --yes",
     "check": "tsc --noEmit",
+    "build:standalone": "scripts/build-standalone.sh",
     "prepack": "npm run build",
     "pack:dry-run": "npm pack --dry-run --cache ./.npm-cache",
     "pack:local": "npm pack --cache ./.npm-cache"
@@ -45,11 +46,21 @@
     "access": "public"
   },
   "license": "MIT",
+  "pkg": {
+    "scripts": [
+      "dist/**/*.js",
+      "node_modules/commander/**/*.js"
+    ],
+    "assets": [
+      "README.md"
+    ]
+  },
   "dependencies": {
     "commander": "^12.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
+    "@yao-pkg/pkg": "^6.19.0",
     "typescript": "^5.5.3"
   },
   "engines": {
@@ -57,6 +68,7 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ]
 }

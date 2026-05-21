@@ -1,5 +1,7 @@
 node_modules/
 .npm-cache/
+.pkg-cache/
+release/
 dist/
 report.json
 report.md
