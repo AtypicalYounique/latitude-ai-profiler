@@ -23,7 +23,7 @@ jobs:
           - runner: ubuntu-latest
             target: node18-linux-arm64
             asset: latitude-ai-profiler-linux-arm64
-          - runner: macos-13
+          - runner: macos-latest
             target: node18-macos-x64
             asset: latitude-ai-profiler-darwin-x64
           - runner: macos-latest
