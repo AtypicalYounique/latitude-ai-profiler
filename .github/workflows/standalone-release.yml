@@ -29,6 +29,12 @@ jobs:
           - runner: macos-latest
             target: node18-macos-arm64
             asset: latitude-ai-profiler-darwin-arm64
+          - runner: ubuntu-latest
+            target: node18-win-x64
+            asset: latitude-ai-profiler-windows-x64.exe
+          - runner: ubuntu-latest
+            target: node18-win-arm64
+            asset: latitude-ai-profiler-windows-arm64.exe
 
     steps:
       - uses: actions/checkout@v4

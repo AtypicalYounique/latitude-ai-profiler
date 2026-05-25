@@ -1,9 +1,11 @@
 import type { CollectorWarning, StorageMount } from "../types.js";
 import { parseNumber } from "../utils/parse.js";
+import { runPowerShellJson } from "../utils/powershell.js";
 import { runCollectorCommand } from "../utils/shell.js";
 
 export async function collectStorage(warnings: CollectorWarning[]): Promise<StorageMount[]> {
   if (process.platform === "darwin") return collectDarwinStorage(warnings);
+  if (process.platform === "win32") return collectWindowsStorage();
 
   const df = await runCollectorCommand("storage", warnings, "df", ["-B1", "-P", "-T"], 5000);
   const lsblk = await runCollectorCommand("storage", warnings, "lsblk", ["-J", "-o", "NAME,TYPE,ROTA,MOUNTPOINT"], 5000);
@@ -29,6 +31,38 @@ export async function collectStorage(warnings: CollectorWarning[]): Promise<Stor
         deviceType: deviceTypes.get(mountpoint ?? "") ?? null
       };
     });
+}
+
+async function collectWindowsStorage(): Promise<StorageMount[]> {
+  const disks = await runPowerShellJson<Array<{
+    DeviceID?: string;
+    FileSystem?: string;
+    Size?: number;
+    FreeSpace?: number;
+    VolumeName?: string;
+  }> | {
+    DeviceID?: string;
+    FileSystem?: string;
+    Size?: number;
+    FreeSpace?: number;
+    VolumeName?: string;
+  }>("Get-CimInstance Win32_LogicalDisk -Filter \"DriveType=3\" | Select-Object DeviceID,FileSystem,Size,FreeSpace,VolumeName", 5000);
+  const rows = Array.isArray(disks) ? disks : disks ? [disks] : [];
+  return rows.map((disk) => {
+    const sizeBytes = disk.Size ?? null;
+    const availableBytes = disk.FreeSpace ?? null;
+    const usedBytes = sizeBytes !== null && availableBytes !== null ? sizeBytes - availableBytes : null;
+    return {
+      filesystem: disk.DeviceID ?? null,
+      mountpoint: disk.DeviceID ? `${disk.DeviceID}\\` : null,
+      type: disk.FileSystem ?? null,
+      sizeBytes,
+      usedBytes,
+      availableBytes,
+      usePercent: sizeBytes && usedBytes !== null ? Math.round((usedBytes / sizeBytes) * 100) : null,
+      deviceType: "local"
+    };
+  });
 }
 
 function parseDeviceTypes(lsblkJson: string | null): Map<string, string> {

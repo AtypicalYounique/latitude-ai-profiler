@@ -1,11 +1,13 @@
 import os from "node:os";
 import type { CollectorWarning, CpuInfo } from "../types.js";
 import { parseKeyValueLines, parseNumber } from "../utils/parse.js";
+import { runPowerShellJson } from "../utils/powershell.js";
 import { safeExec } from "../utils/safeExec.js";
 import { runCollectorCommand } from "../utils/shell.js";
 
 export async function collectCpu(warnings: CollectorWarning[]): Promise<CpuInfo> {
   if (process.platform === "darwin") return collectDarwinCpu();
+  if (process.platform === "win32") return collectWindowsCpu();
 
   const lscpu = await runCollectorCommand("cpu", warnings, "lscpu", [], 3000);
   if (!lscpu) {
@@ -30,6 +32,26 @@ export async function collectCpu(warnings: CollectorWarning[]): Promise<CpuInfo>
     sockets,
     currentMhz: parseNumber(kv["CPU MHz"]),
     maxMhz: parseNumber(kv["CPU max MHz"])
+  };
+}
+
+async function collectWindowsCpu(): Promise<CpuInfo> {
+  const info = await runPowerShellJson<{
+    Name?: string;
+    NumberOfCores?: number;
+    NumberOfLogicalProcessors?: number;
+    SocketDesignation?: string;
+    CurrentClockSpeed?: number;
+    MaxClockSpeed?: number;
+  }>("Get-CimInstance Win32_Processor | Select-Object -First 1 Name,NumberOfCores,NumberOfLogicalProcessors,SocketDesignation,CurrentClockSpeed,MaxClockSpeed", 5000);
+  const cpus = os.cpus();
+  return {
+    model: info?.Name ?? cpus[0]?.model ?? null,
+    physicalCores: info?.NumberOfCores ?? null,
+    logicalThreads: info?.NumberOfLogicalProcessors ?? (cpus.length || null),
+    sockets: info?.SocketDesignation ? 1 : null,
+    currentMhz: info?.CurrentClockSpeed ?? cpus[0]?.speed ?? null,
+    maxMhz: info?.MaxClockSpeed ?? null
   };
 }
 

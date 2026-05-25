@@ -37,6 +37,12 @@ curl -fsSL https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profil
 
 This downloads the right standalone binary for macOS or Linux, runs a safe scan, prints the short summary, and deletes the temporary binary afterward.
 
+On Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profiler/main/scripts/scan.ps1 | iex
+```
+
 With workload intent:
 
 ```bash
@@ -47,6 +53,12 @@ Create a reproducible vLLM benchmark bundle without installing Node:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profiler/main/scripts/scan.sh | sh -s -- bundle vllm --yes --endpoint http://localhost:8000 --model your-served-model --label customer-validation
+```
+
+Windows PowerShell equivalent:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profiler/main/scripts/scan.ps1))) bundle vllm --yes --endpoint http://localhost:8000 --model your-served-model --label customer-validation
 ```
 
 Once `latitude-ai-profiler.com/scan` is pointed at the same script, the branded command is:
@@ -231,7 +243,7 @@ After publishing, users can run:
 npx latitude-ai-profiler scan --yes
 ```
 
-Standalone release binaries are built by `.github/workflows/standalone-release.yml` when a `v*` tag is pushed. The `scripts/scan.sh` bootstrapper downloads the latest release binary for the current platform.
+Standalone release binaries are built by `.github/workflows/standalone-release.yml` when a `v*` tag is pushed. The `scripts/scan.sh` and `scripts/scan.ps1` bootstrappers download the latest release binary for the current platform.
 
 ## Recommendation Logic
 
@@ -277,6 +289,7 @@ Update those files to add real SKU names, pricing, regions, availability, or mor
 
 - NVIDIA GPU detection uses `nvidia-smi` only.
 - macOS Apple Silicon detection treats unified memory as shared accelerator memory, not dedicated data-center VRAM.
+- Windows support uses PowerShell/CIM collectors for basic CPU, memory, OS, storage, network, and display-adapter metadata.
 - Package detection relies on the active Python executable and `pip show`.
 - Kubernetes detection is intentionally shallow and avoids secrets, configmaps, pod env, and logs.
 - Docker detection does not inspect container internals.

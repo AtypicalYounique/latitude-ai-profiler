@@ -1,6 +1,7 @@
 import os from "node:os";
 import type { CollectorWarning, GpuDevice, GpuInfo } from "../types.js";
 import { parseNumber } from "../utils/parse.js";
+import { runPowerShellJson } from "../utils/powershell.js";
 import { commandExists, safeExec } from "../utils/safeExec.js";
 
 const QUERY_FIELDS = [
@@ -26,6 +27,7 @@ export async function collectGpu(warnings: CollectorWarning[]): Promise<GpuInfo>
   }
 
   if (!(await commandExists("nvidia-smi"))) {
+    if (process.platform === "win32") return collectWindowsDisplayAdapters();
     return { acceleratorPresent: false, nvidiaPresent: false, driverVersion: null, cudaVersion: null, gpuCount: 0, gpus: [] };
   }
 
@@ -58,6 +60,52 @@ export async function collectGpu(warnings: CollectorWarning[]): Promise<GpuInfo>
   }
 
   return { acceleratorPresent: gpus.length > 0, nvidiaPresent: gpus.length > 0, driverVersion, cudaVersion, gpuCount: gpus.length, gpus };
+}
+
+async function collectWindowsDisplayAdapters(): Promise<GpuInfo> {
+  const adapters = await runPowerShellJson<Array<{
+    Name?: string;
+    AdapterRAM?: number;
+    PNPDeviceID?: string;
+    DriverVersion?: string;
+  }> | {
+    Name?: string;
+    AdapterRAM?: number;
+    PNPDeviceID?: string;
+    DriverVersion?: string;
+  }>("Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,PNPDeviceID,DriverVersion", 5000);
+  const rows = Array.isArray(adapters) ? adapters : adapters ? [adapters] : [];
+  const gpus: GpuDevice[] = rows
+    .filter((adapter) => adapter.Name)
+    .map((adapter, index) => ({
+      index,
+      name: adapter.Name ?? null,
+      vendor: inferVendor(adapter.Name ?? ""),
+      sharedMemory: false,
+      pciBusId: adapter.PNPDeviceID ?? null,
+      vramTotalMiB: adapter.AdapterRAM ? adapter.AdapterRAM / 1024 / 1024 : null,
+      vramUsedMiB: null,
+      vramFreeMiB: null,
+      utilizationGpuPercent: null,
+      utilizationMemoryPercent: null,
+      powerDrawWatts: null
+    }));
+  const nvidia = gpus.find((gpu) => gpu.vendor === "nvidia");
+  return {
+    acceleratorPresent: gpus.length > 0,
+    nvidiaPresent: Boolean(nvidia),
+    driverVersion: nvidia ? rows[gpus.indexOf(nvidia)]?.DriverVersion ?? null : null,
+    cudaVersion: null,
+    gpuCount: gpus.length,
+    gpus
+  };
+}
+
+function inferVendor(name: string): GpuDevice["vendor"] {
+  if (/nvidia/i.test(name)) return "nvidia";
+  if (/amd|radeon/i.test(name)) return "amd";
+  if (/intel/i.test(name)) return "intel";
+  return "unknown";
 }
 
 function emptyToNull(value: string | undefined): string | null {
