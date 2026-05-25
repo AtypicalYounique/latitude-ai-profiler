@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { writeFile } from "node:fs/promises";
 import { Command } from "commander";
+import { createVllmBenchmarkBundle, renderBundleCliSummary } from "./bundles/vllmBundle.js";
 import { benchmark, scan } from "./index.js";
 import { renderJson } from "./report/json.js";
 import { renderMarkdown } from "./report/markdown.js";
@@ -68,6 +69,44 @@ program
     } else {
       process.stdout.write(json);
     }
+  });
+
+const bundle = program
+  .command("bundle")
+  .description("Create reproducible benchmark evidence bundles for supported runtimes.");
+
+bundle
+  .command("vllm")
+  .description("Capture a reproducible vLLM benchmark bundle around an existing OpenAI-compatible vLLM endpoint.")
+  .option("--yes", "confirm benchmark bundle creation without interactive prompt")
+  .option("--out <dir>", "write benchmark bundles under this directory", "benchmark-runs")
+  .option("--label <label>", "human-readable run label", "vllm")
+  .option("--endpoint <url>", "vLLM endpoint URL", "http://localhost:8000")
+  .option("--model <name>", "served model name; if omitted, the profiler tries /v1/models")
+  .option("--container <name-or-id>", "Docker container to inspect for boot logs and image digest")
+  .option("--command <command>", "command used to start the runtime; recorded in command.txt")
+  .option("--runs <n>", "benchmark runs per synthetic prompt", "3")
+  .option("--warmup-runs <n>", "warmup completions per synthetic prompt", "1")
+  .option("--max-tokens <n>", "max output tokens per request", "128")
+  .option("--skip-benchmark", "capture provenance and metrics without sending benchmark completions")
+  .option("--anonymize", "remove hostname, local IPs, and container names from infrastructure profile outputs")
+  .action(async (options: {
+    yes?: boolean;
+    out?: string;
+    label?: string;
+    endpoint?: string;
+    model?: string;
+    container?: string;
+    command?: string;
+    runs?: string;
+    warmupRuns?: string;
+    maxTokens?: string;
+    skipBenchmark?: boolean;
+    anonymize?: boolean;
+  }) => {
+    requireYes(options.yes, "bundle vllm");
+    const result = await createVllmBenchmarkBundle(options);
+    process.stdout.write(`${renderBundleCliSummary(result.runDir, result.summary)}\n`);
   });
 
 program

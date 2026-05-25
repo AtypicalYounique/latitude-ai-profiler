@@ -1,6 +1,6 @@
 {
   "name": "latitude-ai-profiler",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Safe AI infrastructure profiler for Latitude-style bare metal recommendations.",
   "type": "module",
   "repository": {

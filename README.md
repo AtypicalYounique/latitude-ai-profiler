@@ -43,6 +43,12 @@ With workload intent:
 curl -fsSL https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profiler/main/scripts/scan.sh | sh -s -- --workload inference --model-size 70b --concurrency high
 ```
 
+Create a reproducible vLLM benchmark bundle without installing Node:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AtypicalYounique/latitude-ai-profiler/main/scripts/scan.sh | sh -s -- bundle vllm --yes --endpoint http://localhost:8000 --model your-served-model --label customer-validation
+```
+
 Once `latitude-ai-profiler.com/scan` is pointed at the same script, the branded command is:
 
 ```bash
@@ -107,6 +113,12 @@ Include benchmarks in a scan:
 latitude-ai-profiler scan --yes --with-benchmarks --md report.md
 ```
 
+Create a reproducible benchmark evidence bundle around an existing vLLM server:
+
+```bash
+latitude-ai-profiler bundle vllm --yes --endpoint http://localhost:8000 --model your-served-model --container vllm-8000 --label h100-validation
+```
+
 ## Commands
 
 ### `scan`
@@ -145,6 +157,53 @@ Constraints:
 - No mining-like workload
 - No long GPU burn
 - Temporary files are deleted
+
+### `bundle vllm`
+
+Creates a reproducible benchmark bundle for an existing OpenAI-compatible vLLM endpoint. The command is intended for sales engineering and customer validation, where a one-line terminal summary is not enough evidence.
+
+The profiler writes a timestamped folder under `benchmark-runs/` by default. Each run includes:
+
+- `run_config.json`: run options and privacy note
+- `hardware_profile.json`: detected system, CPU, memory, GPU, storage, network, and recommendation context
+- `software_versions.json`: OS, Docker, Kubernetes, Python, AI runtime, and collector warnings
+- `docker_image.json`: container/image evidence and registry digest when `--container` is provided
+- `command.txt`: the runtime command you provide with `--command`
+- `boot.log`: Docker logs when `--container` is provided; review before sharing externally
+- `boot_meta.json`: health, version, model, and container metadata
+- `nvidia_smi_pre.txt`: pre-run `nvidia-smi` output when available
+- `metrics_start.txt` and `metrics_end.txt`: raw vLLM `/metrics` scrapes
+- `benchmark_result.txt`: human-readable benchmark output
+- `benchmark_result.json`: parsed benchmark result with per-prompt medians and p95s
+- `summary.json`: compact machine-readable summary
+- `README.md`: per-run human summary
+
+Example with workload evidence:
+
+```bash
+latitude-ai-profiler bundle vllm --yes \
+  --endpoint http://localhost:8000 \
+  --model qwen3.6-27b \
+  --container vllm-8000 \
+  --command "docker run ... vllm/vllm-openai@sha256:..." \
+  --label qwen-validation \
+  --runs 5 \
+  --max-tokens 500
+```
+
+Useful options:
+
+- `--endpoint <url>`: vLLM endpoint, default `http://localhost:8000`
+- `--model <name>`: served model name; if omitted, the profiler tries `/v1/models`
+- `--container <name-or-id>`: Docker container to inspect for boot logs and image digest
+- `--command <command>`: records the exact runtime command in `command.txt`
+- `--runs <n>`: runs per synthetic prompt, default `3`
+- `--warmup-runs <n>`: warmups per synthetic prompt, default `1`
+- `--max-tokens <n>`: max generated tokens per request, default `128`
+- `--skip-benchmark`: capture provenance and metrics without sending completions
+- `--anonymize`: redact hostname, local IPs, and container-name surfaces in infrastructure profile outputs
+
+The vLLM bundle scrapes `/metrics` before and after the benchmark. If speculative decoding counters are present, it computes acceptance rate from the change in draft-token and accepted-token counters. Bundle mode uses synthetic prompts, but `boot.log` is real Docker log output when `--container` is provided.
 
 ### `version`
 
@@ -229,8 +288,7 @@ Update those files to add real SKU names, pricing, regions, availability, or mor
 - Real Latitude SKU database
 - Pricing model
 - Cost per 1M tokens
-- Tokens/sec benchmarking
-- vLLM live workload detection
-- Cluster/Kubernetes mode
+- More runtime benchmark bundles beyond vLLM
+- Cluster/Kubernetes benchmark bundle mode
 - Megaport/private connectivity recommendations
 - Dashboard upload

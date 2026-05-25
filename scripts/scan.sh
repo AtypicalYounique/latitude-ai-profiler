@@ -60,7 +60,7 @@ chmod +x "$bin_path"
 
 if [ "$#" -gt 0 ]; then
   case "$1" in
-    scan|benchmark|version|--help|-h|--version|-V)
+    scan|benchmark|bundle|version|--help|-h|--version|-V)
       "$bin_path" "$@"
       exit $?
       ;;
